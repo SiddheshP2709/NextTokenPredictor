@@ -167,4 +167,4 @@ if st.button("🚀 Generate"):
         st.write(result)
 
 st.markdown("---")
-st.caption("Built with ❤️ using Streamlit + PyTorch")
+st.caption("Built with ❤️ using Streamlit + PyTorch By Siddhesh")
