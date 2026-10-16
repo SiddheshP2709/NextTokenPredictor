@@ -52,11 +52,9 @@ def resolve_path(file_path: str) -> str:
         "",
         "checkpoints",
         "checkpoints/war_and_peace",
-        "checkpoints/cpp",
         "checkpoints/python",
         "data/vocabularies",
         "data/vocabularies/war_and_peace",
-        "data/vocabularies/cpp",
         "data/vocabularies/python",
     ]
 

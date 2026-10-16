@@ -37,7 +37,7 @@ def main():
     parser.add_argument(
         "--domain",
         type=str,
-        choices=["text", "cpp", "python"],
+        choices=["text", "python"],
         default="text",
         help="Input domain (affects tokenization rules)",
     )

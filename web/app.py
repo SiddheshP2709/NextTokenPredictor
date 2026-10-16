@@ -1,7 +1,7 @@
-"""Interactive Streamlit Demonstration Application for Next Token Prediction.
+"""Interactive Streamlit Application for Next Word Prediction.
 
-Provides multi-domain sequence generation, real-time probability inspection,
-and model architecture exploration across Natural Language, C++, and Python domains.
+A clean, undergraduate-level course project demonstrating next word prediction
+using Neural Language Models (MLP) trained on Leo Tolstoy's War and Peace.
 """
 
 import sys
@@ -14,19 +14,19 @@ import torch
 # Ensure package is discoverable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from next_token_predictor.inference.loader import load_checkpoint, load_vocabulary, resolve_path
+from next_token_predictor.inference.loader import load_checkpoint, load_vocabulary
 from next_token_predictor.inference.generator import TextGenerator
-from next_token_predictor.utils.device import get_device
 
 
 # Page Configuration
 st.set_page_config(
-    page_title="Neural Language Model - Next Token Predictor",
+    page_title="Next Word Predictor",
+    page_icon="📖",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Custom Styling for Professional Placement Presentation
+# Custom Styling for Clean Academic Presentation
 st.markdown("""
 <style>
     .main-title {
@@ -40,326 +40,297 @@ st.markdown("""
         color: #64748B;
         margin-bottom: 1.5rem;
     }
-    .metric-card {
+    .prompt-box {
         background-color: #F8FAFC;
-        border: 1px solid #E2E8F0;
+        border: 1px solid #CBD5E1;
         border-radius: 8px;
-        padding: 14px;
-        margin-bottom: 12px;
+        padding: 16px;
+        font-size: 1.15rem;
+        line-height: 1.6;
+        margin-top: 10px;
+        margin-bottom: 15px;
     }
-    .token-chip {
-        display: inline-block;
-        background-color: #EEF2F6;
-        color: #0F172A;
-        padding: 2px 8px;
-        margin: 2px;
+    .generated-word {
+        color: #2563EB;
+        font-weight: 600;
+        background-color: #DBEAFE;
+        padding: 2px 6px;
         border-radius: 4px;
-        font-family: monospace;
-        font-size: 0.9rem;
+        margin: 0 2px;
     }
-    .stCodeBlock {
-        border-radius: 8px;
+    .metric-badge {
+        display: inline-block;
+        background-color: #F1F5F9;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 6px 12px;
+        margin-right: 8px;
+        font-size: 0.9rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
 
-# Domain Registry
-DOMAINS = {
-    "Natural Language (War & Peace)": {
-        "domain_key": "text",
-        "vocab_path": "data/vocabularies/war_and_peace/stoi1.pkl",
-        "itos_path": "data/vocabularies/war_and_peace/itos1.pkl",
-        "models": {
-            "Model 1 (Hidden 1024, Embed 64, ReLU)": {
-                "path": "checkpoints/war_and_peace/model1_task1.pt",
-                "hidden_dim": 1024,
-                "embed_dim": 64,
-                "activation": "ReLU",
-                "epochs": 100,
-            },
-            "Model 2 (Hidden 128, Embed 32, Tanh)": {
-                "path": "checkpoints/war_and_peace/model2_task1.pt",
-                "hidden_dim": 128,
-                "embed_dim": 32,
-                "activation": "Tanh",
-                "epochs": 100,
-            },
-            "Model 3 (Hidden 128, Embed 64, Sigmoid)": {
-                "path": "checkpoints/war_and_peace/model3_task1.pt",
-                "hidden_dim": 128,
-                "embed_dim": 64,
-                "activation": "Sigmoid",
-                "epochs": 100,
-            },
-        },
-        "presets": [
-            "the prince was silent and",
-            "all the guests were",
-            "pierre looked at him with",
-            "in the middle of the room",
-        ],
+# Models Registry (War and Peace Models)
+MODELS = {
+    "Model 1 (ReLU - 1024 Hidden Units)": {
+        "path": "checkpoints/war_and_peace/model1_task1.pt",
+        "hidden_dim": 1024,
+        "embed_dim": 64,
+        "activation": "ReLU",
+        "desc": "Largest model with ReLU activation. Captures rich vocabulary patterns.",
     },
-    "C++ Source Code (LLaMA.cpp)": {
-        "domain_key": "cpp",
-        "vocab_path": "data/vocabularies/cpp/stoi_cpp.pkl",
-        "itos_path": "data/vocabularies/cpp/itos_cpp.pkl",
-        "models": {
-            "Checkpoint 2 (Epoch 300, Hidden 256, Embed 64)": {
-                "path": "checkpoints/cpp/cpp_next_token_model2.pt",
-                "hidden_dim": 256,
-                "embed_dim": 64,
-                "activation": "ReLU",
-                "epochs": 300,
-            },
-            "Checkpoint 1 (Epoch 100, Hidden 256, Embed 64)": {
-                "path": "checkpoints/cpp/cpp_next_token_model.pt",
-                "hidden_dim": 256,
-                "embed_dim": 64,
-                "activation": "ReLU",
-                "epochs": 100,
-            },
-            "Checkpoint 3 (Epoch 100 Baseline, Hidden 128, Embed 32)": {
-                "path": "checkpoints/cpp/cpp_next_token_model3.pt",
-                "hidden_dim": 128,
-                "embed_dim": 32,
-                "activation": "ReLU",
-                "epochs": 100,
-            },
-        },
-        "presets": [
-            "int calculate_sum(int count)",
-            "struct llama_context {",
-            "static void ggml_graph_compute(",
-            "if (token == NULL)",
-        ],
+    "Model 2 (Tanh - 128 Hidden Units)": {
+        "path": "checkpoints/war_and_peace/model2_task1.pt",
+        "hidden_dim": 128,
+        "embed_dim": 32,
+        "activation": "Tanh",
+        "desc": "Compact model with hyperbolic tangent (Tanh) activation.",
     },
-    "Python Source Code (GIANT Repository)": {
-        "domain_key": "python",
-        "vocab_path": "data/vocabularies/python/stoi_python.pkl",
-        "itos_path": "data/vocabularies/python/itos_python.pkl",
-        "models": {
-            "Checkpoint 1 (Epoch 1000, Hidden 256, Embed 64)": {
-                "path": "checkpoints/python/python_model1.pt",
-                "hidden_dim": 256,
-                "embed_dim": 64,
-                "activation": "ReLU",
-                "epochs": 1000,
-            },
-        },
-        "presets": [
-            "def calculate_loss(self, x):",
-            "import numpy as np",
-            "for i in range(len(",
-            "plt . semilogy (",
-        ],
+    "Model 3 (Sigmoid - 128 Hidden Units)": {
+        "path": "checkpoints/war_and_peace/model3_task1.pt",
+        "hidden_dim": 128,
+        "embed_dim": 64,
+        "activation": "Sigmoid",
+        "desc": "Baseline model using Sigmoid activation.",
     },
 }
 
+VOCAB_PATH = "data/vocabularies/war_and_peace/stoi1.pkl"
+ITOS_PATH = "data/vocabularies/war_and_peace/itos1.pkl"
+
+SAMPLE_PROMPTS = [
+    "the prince was silent and",
+    "in the middle of the",
+    "all the guests were",
+    "pierre looked at him with",
+    "at that moment the door",
+]
+
 
 @st.cache_resource(show_spinner=False)
-def get_cached_resources(model_path: str, vocab_path: str, itos_path: str):
+def get_cached_model(model_path: str):
     """Load model and vocabulary with persistent caching."""
     model, device = load_checkpoint(model_path)
-    stoi, itos = load_vocabulary(vocab_path, itos_path)
+    stoi, itos = load_vocabulary(VOCAB_PATH, ITOS_PATH)
     return model, stoi, itos, device
 
 
 # Header
-st.markdown('<div class="main-title">Neural Language Model: Next Token Predictor</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">📖 Next Word Predictor</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="sub-title">Autoregressive sequence continuation using n-gram neural probabilistic architectures across English Prose, C++, and Python domains.</div>',
+    '<div class="sub-title">A Neural Language Model that learns language patterns from Leo Tolstoy\'s <i>War and Peace</i> to predict the next word in a sentence.</div>',
     unsafe_allow_html=True,
 )
 
 # Sidebar Controls
-st.sidebar.header("Configuration & Hyperparameters")
+st.sidebar.header("Model & Settings")
 
-# Domain Selection
-domain_name = st.sidebar.selectbox("Corpus Domain:", list(DOMAINS.keys()))
-domain_info = DOMAINS[domain_name]
+# Model Selection
+selected_model_name = st.sidebar.selectbox("Choose Trained Model:", list(MODELS.keys()))
+model_info = MODELS[selected_model_name]
+st.sidebar.caption(model_info["desc"])
 
-# Model Variant Selection
-model_choice = st.sidebar.selectbox("Model Architecture / Variant:", list(domain_info["models"].keys()))
-selected_model_meta = domain_info["models"][model_choice]
+st.sidebar.markdown("---")
+st.sidebar.subheader("Prediction Settings")
 
-# Sampling Hyperparameters
-st.sidebar.subheader("Sampling Hyperparameters")
-temperature = st.sidebar.slider(
-    "Temperature (Softmax Scaling):",
-    min_value=0.1,
-    max_value=2.0,
-    value=0.8,
-    step=0.05,
-    help="Higher values increase entropy and diversity; lower values collapse towards greedy decoding.",
+words_to_predict = st.sidebar.slider(
+    "Number of words to generate:",
+    min_value=1,
+    max_value=20,
+    value=5,
+    help="How many subsequent words the model should predict sequentially.",
 )
 
-enable_top_k = st.sidebar.checkbox("Enable Top-K Filtering", value=False)
-top_k_val = None
-if enable_top_k:
-    top_k_val = st.sidebar.slider("Top-K Candidates:", min_value=1, max_value=50, value=15)
+temperature = st.sidebar.slider(
+    "Creativity (Temperature):",
+    min_value=0.2,
+    max_value=1.5,
+    value=0.8,
+    step=0.1,
+    help="Lower values make the model pick the most probable words. Higher values make predictions more diverse.",
+)
 
-max_tokens = st.sidebar.slider("Tokens to Predict:", min_value=1, max_value=50, value=10)
-seed_val = st.sidebar.number_input("Random Seed (Reproducibility):", min_value=1, max_value=999999, value=42)
+seed_val = st.sidebar.number_input("Random Seed:", min_value=1, max_value=9999, value=42)
 
-# Load Selected Artifacts
-with st.spinner("Loading checkpoint and vocabulary..."):
-    model, stoi, itos, device = get_cached_resources(
-        selected_model_meta["path"],
-        domain_info["vocab_path"],
-        domain_info["itos_path"],
-    )
+# Load Selected Model
+with st.spinner("Loading neural network model..."):
+    model, stoi, itos, device = get_cached_model(model_info["path"])
 
 context_size = getattr(model, "size", getattr(model, "context_size", 5))
 vocab_size = len(stoi)
 total_params = sum(p.numel() for p in model.parameters())
 
-# Sidebar Metadata
+# Sidebar Stats
 st.sidebar.markdown("---")
-st.sidebar.markdown(f"""
-**Model Metadata**
-- Device: `{device}`
-- Vocabulary Size: `{vocab_size:,}` tokens
-- Context Window ($N$): `{context_size}` tokens
-- Parameters: `{total_params:,}`
-- Hidden Units: `{selected_model_meta['hidden_dim']}`
-- Embedding Dimension: `{selected_model_meta['embed_dim']}`
-- Activation: `{selected_model_meta['activation']}`
-""")
+st.sidebar.subheader("Model Information")
+st.sidebar.write(f"- **Vocabulary Size**: {vocab_size:,} words")
+st.sidebar.write(f"- **Context Size**: {context_size} previous words")
+st.sidebar.write(f"- **Embedding Size**: {model_info['embed_dim']} dimensions")
+st.sidebar.write(f"- **Hidden Layer**: {model_info['hidden_dim']} neurons ({model_info['activation']})")
+st.sidebar.write(f"- **Total Parameters**: {total_params:,}")
+st.sidebar.write(f"- **Device**: `{device}`")
+
 
 # Main Tabs
-tab_inference, tab_theory, tab_viva = st.tabs([
-    "Interactive Generation",
-    "Architecture & Mathematics",
-    "Interview & Defense Guide",
+tab_predict, tab_how_it_works, tab_project_info = st.tabs([
+    "Try Prediction",
+    "How It Works (Simple Explanation)",
+    "Project Details & Viva Q&A",
 ])
 
-with tab_inference:
-    col_input, col_meta = st.columns([2.5, 1])
+# ----------------- TAB 1: PREDICTION -----------------
+with tab_predict:
+    st.subheader("1. Enter a sentence or pick an example:")
 
-    with col_input:
-        st.subheader("Prompt Input")
-        preset_choice = st.selectbox(
-            "Select Prompt Preset:",
-            ["(Custom Prompt)"] + domain_info["presets"],
-        )
+    # Quick example buttons
+    cols = st.columns(len(SAMPLE_PROMPTS))
+    selected_sample = None
+    for i, sample in enumerate(SAMPLE_PROMPTS):
+        if cols[i].button(sample, key=f"btn_{i}"):
+            st.session_state["user_prompt"] = sample
 
-        default_text = preset_choice if preset_choice != "(Custom Prompt)" else domain_info["presets"][0]
-        prompt = st.text_input("Seed Context:", value=default_text)
+    default_prompt = st.session_state.get("user_prompt", SAMPLE_PROMPTS[0])
+    prompt_input = st.text_input("Starting Words (Context):", value=default_prompt)
 
-        generate_clicked = st.button("Generate Next Tokens", type="primary")
+    col_btn, col_stats = st.columns([1, 3])
+    predict_clicked = col_btn.button("Predict Next Word", type="primary")
 
-    with col_meta:
-        st.subheader("System Status")
-        st.metric(label="Vocabulary Size", value=f"{vocab_size:,}")
-        st.metric(label="Parameter Count", value=f"{total_params:,}")
-        st.metric(label="Context Size", value=f"{context_size} tokens")
-
-    if generate_clicked:
-        if not prompt.strip():
-            st.error("Please enter a non-empty starting prompt.")
-        else:
-            generator = TextGenerator(
-                model=model,
-                stoi=stoi,
-                itos=itos,
-                device=device,
-                context_size=context_size,
-                domain=domain_info["domain_key"],
-            )
-
-            with st.spinner("Running autoregressive forward pass..."):
-                result = generator.generate(
-                    prompt=prompt,
-                    max_new_tokens=max_tokens,
-                    temperature=temperature,
-                    top_k=top_k_val,
-                    seed=seed_val,
-                    track_probabilities=True,
+    if predict_clicked or "last_result" in st.session_state:
+        if predict_clicked:
+            if not prompt_input.strip():
+                st.error("Please enter at least one word.")
+            else:
+                generator = TextGenerator(
+                    model=model,
+                    stoi=stoi,
+                    itos=itos,
+                    device=device,
+                    context_size=context_size,
+                    domain="text",
                 )
 
+                with st.spinner("Calculating word probabilities..."):
+                    result = generator.generate(
+                        prompt=prompt_input,
+                        max_new_tokens=words_to_predict,
+                        temperature=temperature,
+                        seed=seed_val,
+                        track_probabilities=True,
+                    )
+                st.session_state["last_result"] = result
+                st.session_state["last_prompt"] = prompt_input
+
+        if "last_result" in st.session_state:
+            res = st.session_state["last_result"]
+
             st.markdown("---")
-            st.subheader("Generation Output")
+            st.subheader("2. Prediction Result:")
 
-            if domain_info["domain_key"] in ("cpp", "python"):
-                st.code(result["full_text"], language=domain_info["domain_key"])
-            else:
-                st.write(result["full_text"])
+            # Highlight generated words
+            orig_prompt = res["prompt"].strip()
+            highlighted_words = " ".join([f'<span class="generated-word">{w}</span>' for w in res["generated_tokens"]])
+            full_html = f'<div class="prompt-box">{orig_prompt} {highlighted_words}</div>'
+            st.markdown(full_html, unsafe_allow_html=True)
+            st.caption("The original prompt is in black, and the model's predicted next words are highlighted in blue.")
 
-            st.markdown("##### Generated Token Sequence")
-            chips_html = "".join([f'<span class="token-chip">{tok}</span>' for tok in result["generated_tokens"]])
-            st.markdown(chips_html, unsafe_allow_html=True)
-
-            # Step-by-Step Probability Inspection
-            if result["steps"]:
+            # Top candidates for the immediate next word
+            if res["steps"]:
+                first_step = res["steps"][0]
                 st.markdown("---")
-                st.subheader("Token Probability Distribution (Top Candidates per Step)")
-                st.caption("Visualizing the categorical distribution output by Softmax(logits / T).")
+                st.subheader(f"Top 5 Candidates for the Immediate Next Word:")
+                st.caption(f"Given the context '{orig_prompt}', here is what the model considered most likely:")
 
-                prob_rows = []
-                for step in result["steps"]:
-                    row = {"Step": f"Step {step['step']}"}
-                    for rank, (cand, prob) in enumerate(step["candidates"][:3], start=1):
-                        row[f"Rank {rank} Token"] = cand
-                        row[f"Rank {rank} Prob"] = f"{prob * 100:.1f}%"
-                    prob_rows.append(row)
+                candidates_data = []
+                for word, prob in first_step["candidates"][:5]:
+                    candidates_data.append({"Candidate Word": word, "Probability (%)": round(prob * 100, 2)})
 
-                df_probs = pd.DataFrame(prob_rows)
-                st.dataframe(df_probs, use_container_width=True)
+                df_cand = pd.DataFrame(candidates_data)
 
-                # Chart for Step 1
-                first_step = result["steps"][0]
-                chart_data = pd.DataFrame({
-                    "Token": [c[0] for c in first_step["candidates"]],
-                    "Probability": [c[1] for c in first_step["candidates"]],
-                }).set_index("Token")
-                st.bar_chart(chart_data)
+                col_table, col_chart = st.columns([1, 1.5])
+                with col_table:
+                    st.dataframe(df_cand, use_container_width=True, hide_index=True)
 
-with tab_theory:
-    st.subheader("Theoretical Formulation: Neural Probabilistic Language Model")
-    st.markdown(r"""
-    This project implements an n-gram Neural Probabilistic Language Model inspired by Yoshua Bengio et al. (2003)
-    and Andrej Karpathy's foundational architectures.
+                with col_chart:
+                    chart_df = df_cand.set_index("Candidate Word")
+                    st.bar_chart(chart_df)
+
+                # Step-by-step summary
+                if len(res["steps"]) > 1:
+                    with st.expander("See all generated steps"):
+                        step_summary = []
+                        for s in res["steps"]:
+                            top_choice = s["candidates"][0]
+                            step_summary.append({
+                                "Step": f"Word #{s['step']}",
+                                "Chosen Word": s["candidates"][0][0],
+                                "Confidence": f"{s['candidates'][0][1] * 100:.1f}%",
+                                "Top 3 Alternatives": ", ".join([f"{w} ({p*100:.1f}%)" for w, p in s["candidates"][1:4]])
+                            })
+                        st.dataframe(pd.DataFrame(step_summary), use_container_width=True, hide_index=True)
+
+
+# ----------------- TAB 2: HOW IT WORKS -----------------
+with tab_how_it_works:
+    st.subheader("How Does Next Word Prediction Work?")
+    st.markdown("""
+    This project uses a **Neural Probabilistic Language Model** implemented in PyTorch.
+    Here is the step-by-step process in simple terms:
     
-    #### 1. Language Modeling Objective
-    Given a sequence of tokens $w_1, w_2, \dots, w_T$, the joint probability is factored via the chain rule of probability:
-    $$P(w_1, w_2, \dots, w_T) = \prod_{t=1}^{T} P(w_t \\mid w_1, \dots, w_{t-1})$$
+    ### 1. The Context Window (5 Previous Words)
+    Instead of reading an entire book at once, the model looks at the **last 5 words** you typed.
+    For example:
+    - Input words: `the`, `prince`, `was`, `silent`, `and`
     
-    Under the Markov assumption with context window size $N$:
-    $$P(w_t \\mid w_1, \dots, w_{t-1}) \\approx P(w_t \\mid w_{t-N+1}, \dots, w_{t-1})$$
-
-    #### 2. Model Forward Computation
-    1. **Embedding Layer**: Each discrete token index $w_i \\in \\{0, \\dots, |V|-1\\}$ is projected into continuous distributed vector space:
-       $$e_i = E(w_i) \\in \\mathbb{R}^{D}$$
-    2. **Concatenation**: Context embeddings are concatenated:
-       $$h_0 = [e_1; e_2; \\dots; e_N] \\in \\mathbb{R}^{N \\times D}$$
-    3. **Hidden Representation**:
-       $$h_1 = \\sigma(W_1 \\cdot h_0 + b_1) \\in \\mathbb{R}^{H}$$
-       Where $\\sigma$ is non-linear activation (ReLU, Tanh, or Sigmoid).
-    4. **Unnormalized Logits Output**:
-       $$z = W_2 \\cdot h_1 + b_2 \\in \\mathbb{R}^{|V|}$$
-    5. **Softmax Normalization & Temperature Scaling**:
-       $$P(w_t = k) = \\frac{\\exp(z_k / T)}{\\sum_{j=1}^{|V|} \\exp(z_j / T)}$$
-
-    #### 3. Loss Function
-    Trained end-to-end via Cross-Entropy Loss (Negative Log-Likelihood):
-    $$\\mathcal{L} = - \\sum_{k=1}^{|V|} y_k \\log(P(w_t = k)) = -\\log P(w_t = y^*)$$
+    ### 2. Word Embeddings (Converting Words to Numbers)
+    Computers cannot understand raw words directly. Each word is mapped to a unique number ID,
+    and then converted into a **dense vector of numbers** (e.g., 64 numbers per word).
+    - Words with similar meanings (like *king* and *prince*) end up having similar numbers!
+    
+    ### 3. Hidden Neural Network Layer
+    The 5 word vectors are combined and passed through a hidden layer of neurons (128 or 1024 neurons).
+    This layer learns the grammatical patterns and relationships between words from the training text.
+    
+    ### 4. Probability Output (Softmax)
+    The model looks at all **19,764 words** in its vocabulary and gives each word a percentage probability
+    of being the next word. The word with the highest probability (or sampled based on temperature) is chosen!
+    
+    ---
+    
+    ### Why compare ReLU, Tanh, and Sigmoid?
+    In this course project, we trained three identical model setups with different **activation functions**:
+    1. **ReLU (Model 1)**: Usually trains fastest and allows building larger networks without vanishing gradients.
+    2. **Tanh (Model 2)**: Outputs values between -1 and 1, providing stable zero-centered representations.
+    3. **Sigmoid (Model 3)**: A classic activation function that compresses values between 0 and 1.
     """)
 
-with tab_viva:
-    st.subheader("Placement Interview Reference & Technical Viva Q&A")
-    st.markdown(r"""
-    #### Key Questions Interviewers Will Ask About This Project:
 
-    **Q1: Why use learned embeddings instead of one-hot encoding?**
-    - *Answer:* One-hot vectors are orthogonal and equidistant; they cannot capture semantic or syntactic similarity (cosine similarity is always 0). Furthermore, one-hot vectors scale with $O(|V|)$, causing dimensionality explosion. Learned dense embeddings $E \\in \\mathbb{R}^{|V| \\times D}$ project words into a continuous geometric manifold where semantically related tokens cluster together.
-
-    **Q2: What is the primary limitation of this fixed-window MLP architecture compared to Transformers or LSTMs?**
-    - *Answer:* The MLP architecture enforces a rigid, fixed-length context window $N$. Any context beyond $N$ tokens is entirely lost. In contrast, Recurrent Neural Networks (RNN/LSTM) maintain a hidden state vector over time, and Transformers utilize multi-head self-attention with dynamic $O(1)$ path length between any two tokens in sequence length $L$.
-
-    **Q3: How does sampling temperature $T$ mathematically affect generation?**
-    - *Answer:* As $T \\to 0$, the scaled logits $z/T$ amplify the gap between the largest logit and all others, collapsing the softmax distribution into a Dirac delta function (equivalent to greedy argmax). As $T \\to \\infty$, $z/T \\to 0$, causing softmax to converge toward a uniform distribution across all vocabulary tokens.
-
-    **Q4: Why was AdamW chosen over standard SGD?**
-    - *Answer:* AdamW decouples $L_2$ weight decay regularization from gradient-based adaptive moment estimation, preventing weight decay distortion in parameters with large gradient variance.
+# ----------------- TAB 3: PROJECT INFO & VIVA Q&A -----------------
+with tab_project_info:
+    st.subheader("Undergraduate Project Details")
+    st.markdown("""
+    - **Project Name**: Next Word Predictor using Neural Language Model
+    - **Framework**: PyTorch & Python
+    - **Interface**: Streamlit Web Dashboard
+    - **Dataset**: Leo Tolstoy's novel *War and Peace* (~19,764 distinct vocabulary words)
+    - **Context Size**: 5 words
+    
+    ---
+    
+    ### Common Project Viva Questions & Simple Answers:
+    
+    **Q1: What is the main objective of this project?**
+    - **Answer:** To build a neural network that predicts the most likely next word in a sentence based on the preceding 5 words, similar to keyboard autocomplete.
+    
+    **Q2: What is word embedding and why is it used?**
+    - **Answer:** Word embedding represents words as continuous vectors of real numbers rather than large, sparse one-hot vectors. It allows the model to capture semantic similarities (e.g., *happy* and *glad* are placed close together in vector space).
+    
+    **Q3: What does the temperature parameter do?**
+    - **Answer:** Temperature controls how 'creative' or 'safe' the predictions are. Low temperature (e.g. 0.3) makes the model greedily pick only the most probable words. High temperature (e.g. 1.2) flattens probabilities, producing more varied and creative words.
+    
+    **Q4: What is the context window?**
+    - **Answer:** The context window is the number of preceding words the model looks at to make a prediction. In our project, the context size is 5 words.
+    
+    **Q5: What loss function was used to train the model?**
+    - **Answer:** Cross-Entropy Loss (Negative Log-Likelihood), which measures how far the model's predicted probability distribution was from the actual next word in the book.
     """)

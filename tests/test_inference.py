@@ -25,14 +25,14 @@ def test_generator_deterministic_seed():
 
 
 def test_generator_probability_tracking():
-    vocab = ["int", "main", "(", ")", "{", "return", "0", ";", "}"]
+    vocab = ["the", "sun", "rose", "in", "east", "and", "shone", "brightly", "."]
     stoi = {w: i for i, w in enumerate(vocab)}
     itos = {i: w for i, w in enumerate(vocab)}
 
     model = Next_Word_Predictor(size=2, vocab_size=len(vocab), embed_dim=8, hidden_dim=16)
-    generator = TextGenerator(model=model, stoi=stoi, itos=itos, context_size=2, domain="cpp")
+    generator = TextGenerator(model=model, stoi=stoi, itos=itos, context_size=2, domain="text")
 
-    result = generator.generate("int main", max_new_tokens=3, track_probabilities=True)
+    result = generator.generate("the sun", max_new_tokens=3, track_probabilities=True)
     assert len(result["steps"]) == 3
     assert len(result["steps"][0]["candidates"]) > 0
 

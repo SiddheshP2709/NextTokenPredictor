@@ -30,7 +30,7 @@ def main():
     parser.add_argument(
         "--domain",
         type=str,
-        choices=["text", "cpp", "python"],
+        choices=["text", "python"],
         default="text",
     )
     parser.add_argument(
