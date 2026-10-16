@@ -1,10 +1,10 @@
-# Next Word Predictor 📖
+# Next Word Predictor 
 
 An undergraduate-level Machine Learning project that predicts the next word in an English sentence using a Neural Language Model built with **PyTorch** and an interactive **Streamlit** web app.
 
 ---
 
-## 📌 Project Overview
+## Project Overview
 
 This project implements next-word prediction—the same technology behind mobile keyboard autocomplete and predictive text.
 
@@ -14,7 +14,7 @@ The model was trained on Leo Tolstoy's classic novel, ***War and Peace***.
 
 ---
 
-## 🎯 How It Works (Simple Concept)
+## How It Works (Simple Concept)
 
 1. **Input Words**: You type a sentence (e.g., `"the prince was silent and"`).
 2. **Word Lookup**: Each word is converted into a list of numbers (word embedding) that represents its meaning.
@@ -23,7 +23,7 @@ The model was trained on Leo Tolstoy's classic novel, ***War and Peace***.
 
 ---
 
-## 🧪 Models Trained
+## Models Trained
 
 To compare how different neural network activation functions perform, three variations were trained:
 
@@ -39,7 +39,7 @@ To compare how different neural network activation functions perform, three vari
 
 ---
 
-## 💻 Interactive Web Application
+## Interactive Web Application
 
 The project includes an interactive web dashboard built with Streamlit:
 
@@ -50,7 +50,7 @@ The project includes an interactive web dashboard built with Streamlit:
 
 ---
 
-## 🚀 How to Run
+## How to Run
 
 ### 1. Install Dependencies
 Make sure you have Python installed, then install the required packages:
