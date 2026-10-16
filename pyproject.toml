@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "next-token-predictor"
+version = "1.0.0"
+description = "Neural language models for next token prediction across natural language, C++, and Python domains."
+readme = "README.md"
+authors = [
+    { name = "Siddhesh Patil" }
+]
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=2.0.0",
+    "streamlit>=1.30.0",
+    "pandas>=2.0.0",
+    "scikit-learn>=1.3.0",
+    "matplotlib>=3.7.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --import-mode=importlib"
+testpaths = [
+    "tests",
+]
+pythonpath = [
+    "src"
+]

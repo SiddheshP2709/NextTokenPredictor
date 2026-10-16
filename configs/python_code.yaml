@@ -1,0 +1,29 @@
+# Configuration for Python Source Code Model (GIANT Python Corpus)
+
+dataset:
+  name: "giant_python"
+  source: "wangshusen/GIANT-Python-Code repository"
+  vocab_path: "data/vocabularies/python/stoi_python.pkl"
+  itos_path: "data/vocabularies/python/itos_python.pkl"
+  vocab_csv: "data/vocabularies/python/python_vocabulary.csv"
+  vocab_size: 521
+  context_size: 5
+
+model:
+  architecture: "NextTokenPredictor"
+  embed_dim: 64
+  hidden_dim: 256
+  activation: "relu"
+  checkpoint_path: "checkpoints/python/python_model1.pt"
+
+training:
+  batch_size: 1024
+  epochs: 1000
+  learning_rate: 0.001
+  optimizer: "AdamW"
+
+inference:
+  temperature: 0.7
+  top_k: 10
+  default_prompt: "def forward(self, x):"
+  max_new_tokens: 15

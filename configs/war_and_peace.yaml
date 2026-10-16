@@ -1,0 +1,29 @@
+# Configuration for Natural Language Model (War and Peace Corpus)
+
+dataset:
+  name: "war_and_peace"
+  source: "Leo Tolstoy - Project Gutenberg / Kaggle"
+  vocab_path: "data/vocabularies/war_and_peace/stoi1.pkl"
+  itos_path: "data/vocabularies/war_and_peace/itos1.pkl"
+  vocab_size: 19764
+  context_size: 5
+
+model:
+  architecture: "MLP"
+  embed_dim: 64
+  hidden_dim: 1024
+  activation: "relu"
+  checkpoint_path: "checkpoints/war_and_peace/model1_task1.pt"
+
+training:
+  batch_size: 1024
+  epochs: 100
+  learning_rate: 0.001
+  optimizer: "AdamW"
+  weight_decay: 0.01
+
+inference:
+  temperature: 1.0
+  top_k: 20
+  default_prompt: "the prince walked into the"
+  max_new_tokens: 15
